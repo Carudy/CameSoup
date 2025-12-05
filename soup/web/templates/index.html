@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="{{url_for('static',filename='web/favicon.ico')}}" type="image/x-icon"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='web/pico.min.css') }}" type="text/css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='web/kame.css') }}" type="text/css">
+    <title>Kame</title>
+</head>
+<body>
+
+<header> 
+    <center> <h1>Hello GOP!</h1>  </center>  
+</header>
+
+<main class="container">
+    <div id="chatbox" class="overflow-auto">
+        <table>
+        <tbody> 
+            <tr>
+                <td class="sayer">A: </td>
+                <td class="cont">Hello!!!</td>
+           </tr>
+        </tbody>
+        </table>
+    </div>
+
+    <div class="grid" id="panel">
+        <div>
+            <button>Start New Soup</button>
+            <button>End Soup</button>
+        </div>
+
+        <div>
+            <textarea name="saying" id="input_box"></textarea>
+        </div>
+
+        <div>
+            <fieldset>
+                <label>
+                    Input Type:
+                </label>
+                <label>
+                    <input type="radio" id="input_ask" name="input_type" value="Ask" checked /> 
+                    Ask Question
+                </label>
+                <label>
+                    <input type="radio" id="input_answer" name="input_type" value="Answer" /> 
+                    Answer
+                </label>
+            </fieldset>
+            <button>Enter</button>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>

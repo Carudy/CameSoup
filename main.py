@@ -1,4 +1,4 @@
-from soup.flow import SoupFlow
+from soup.game import SoupFlow
 
 if __name__ == "__main__":
     flow = SoupFlow()
