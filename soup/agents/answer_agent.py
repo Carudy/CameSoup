@@ -5,7 +5,8 @@ from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
-from soup.config import CHERRYIN_KEY, GAME_STATE
+from soup.agents.dep import SoupState
+from soup.config import CHERRYIN_KEY
 
 JUDGE_PROMPT = """
 你是海龟汤游戏的判断者，根据用户的回答，判断其是否大体正确。
@@ -29,15 +30,16 @@ model = OpenAIChatModel(
 
 answer_agent = Agent(
     model=model,
+    deps_type=SoupState,
     system_prompt=JUDGE_PROMPT,
     output_type=JudgeRes,
 )
 
 
 @answer_agent.instructions
-def answer_instructions() -> str:
+def answer_instructions(ctx) -> str:
     """为answer_agent生成指令。"""
-    current_soup = GAME_STATE["current_soup"]
+    current_soup = ctx.deps.current_soup
     soup_question = current_soup["question"]
     soup_answer = current_soup["answer"]
 
