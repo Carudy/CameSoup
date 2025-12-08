@@ -1,6 +1,4 @@
-const server_addr = window.location.hostname
-const server_port = '42345'
-var server_url = 'http://' + server_addr + ':' + server_port
+var server_url = "https://app.imgop.dedyn.io/game/soup";
 
 var sending_cmd = false;
 

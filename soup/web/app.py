@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, render_template, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from soup.config import logger
 from soup.game import SoupFlow
@@ -11,10 +12,17 @@ class SoupWebApp(Flask):
 
 
 app = SoupWebApp(__name__)
-
+app.wsgi_app = ProxyFix(
+    app.wsgi_app,
+    x_for=1,           # Trust X-Forwarded-For
+    x_proto=1,         # Trust X-Forwarded-Proto
+    x_host=1,          # Trust X-Forwarded-Host
+    x_port=1,          # Trust X-Forwarded-Port
+    x_prefix=1         # THIS IS KEY — Trust X-Forwarded-Prefix
+)
 
 @app.route("/")
-def hello_world():
+def index():
     return render_template("index.html")
 
 
