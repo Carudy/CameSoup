@@ -8,7 +8,7 @@ from rich.text import Text
 
 from soup.agents import answer_agent, judge_agent
 from soup.agents.dep import SoupState
-from soup.config import BASE_DIR
+from soup.config import BASE_DIR, logger
 
 
 class SoupFlow:
@@ -32,39 +32,58 @@ class SoupFlow:
     def start_new_game(self):
         self.game_state["running"] = True
         self.game_state["current_soup"] = self.get_random_soup()
+        logger.info(f"New game started with soup: {self.game_state['current_soup']}")
 
     def end_game(self):
         self.game_state["running"] = False
         self.game_state["current_soup"] = None
+        logger.info("Game ended.")
 
-    def handle_guess(self, user_input):
+    def handle_ask(self, user_input):
+        res = {
+            "msg": "",
+        }
+
         if not self.game_state["running"]:
-            return "Game is not running."
+            res["msg"] = "Game is not running."
+            return res
 
         judge_res = self.judge_agent.run_sync(
             user_input, deps=SoupState(**self.game_state)
         )
         msg = f"判断：{judge_res.output.result}"
+        res["msg"] = msg
         msg += f"\n依据：{judge_res.output.reasoning}"
-        return msg
+        self.console.print(Text(msg, style="bold blue"))
+        return res
 
     def handle_answer(self, user_input):
+        res = {
+            "msg": "",
+        }
+
         if not self.game_state["running"]:
-            return "Game is not running."
+            res["msg"] = "Game is not running."
+            return res
 
         answer_res = self.answer_agent.run_sync(
             user_input, deps=SoupState(**self.game_state)
         )
         if answer_res.output.result == "正确":
-            result = (
+            res["msg"] = (
                 f"恭喜你，猜对了！汤底是：{self.game_state['current_soup']['answer']}"
             )
+            self.console.print(Text(res["msg"], style="bold blue"))
             self.end_game()
-            return result
         else:
-            msg = "很遗憾，回答错误。"
-            msg += f"\n依据：{answer_res.output.reasoning}"
-            return msg
+            res["msg"] = "很遗憾，回答错误。"
+            self.console.print(
+                Text(
+                    res["msg"] + f"\n依据：{answer_res.output.reasoning}",
+                    style="bold blue",
+                )
+            )
+        return res
 
     def run(self, user_input):
         if "start" == user_input.strip().lower():
@@ -86,12 +105,10 @@ class SoupFlow:
                 )
 
             if user_input.strip().startswith("ask"):
-                msg = self.handle_guess(user_input)
-                self.console.print(Text(msg, style="bold blue"))
+                self.handle_ask(user_input)
 
             elif user_input.strip().startswith("ans"):
-                msg = self.handle_answer(user_input)
-                self.console.print(Text(msg, style="bold blue"))
+                self.handle_answer(user_input)
 
             else:
                 self.console.print(Text("无法识别的输入。", style="bold red"))

@@ -11,25 +11,25 @@
 <body>
 
 <header> 
-    <center> <h1>Hello GOP!</h1>  </center>  
+    <center> 
+        <h1>海龟汤</h1>  
+        <h2 id="thinking">🤔...</h2>
+    </center>  
 </header>
 
 <main class="container">
     <div id="chatbox" class="overflow-auto">
         <table>
-        <tbody> 
-            <tr>
-                <td class="sayer">A: </td>
-                <td class="cont">Hello!!!</td>
-           </tr>
+        <tbody id="chat_tab"> 
+            
         </tbody>
         </table>
     </div>
 
     <div class="grid" id="panel">
         <div>
-            <button>Start New Soup</button>
-            <button>End Soup</button>
+            <button id="btn_new_game">开始新汤</button>
+            <button id="btn_end_game">结束此汤</button>
         </div>
 
         <div>
@@ -39,21 +39,22 @@
         <div>
             <fieldset>
                 <label>
-                    Input Type:
+                    输入类型:
                 </label>
                 <label>
                     <input type="radio" id="input_ask" name="input_type" value="Ask" checked /> 
-                    Ask Question
+                    提问
                 </label>
                 <label>
                     <input type="radio" id="input_answer" name="input_type" value="Answer" /> 
-                    Answer
+                    回答
                 </label>
             </fieldset>
-            <button>Enter</button>
+            <button id="input_btn">发送（Enter）</button>
         </div>
     </div>
 </main>
 
 </body>
+<script src="{{ url_for('static', filename='web/kame.js') }}"></script>
 </html>
