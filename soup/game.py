@@ -2,7 +2,6 @@ import json
 import os
 import random
 
-from pydantic import BaseModel
 from rich.console import Console
 from rich.text import Text
 
@@ -15,6 +14,7 @@ class SoupFlow:
     def __init__(self):
         self.judge_agent = judge_agent
         self.answer_agent = answer_agent
+        self.ai_running = False
 
         self.game_state = {
             "running": False,
@@ -43,6 +43,7 @@ class SoupFlow:
         res = {
             "msg": "",
         }
+        self.ai_running = True
 
         if not self.game_state["running"]:
             res["msg"] = "Game is not running."
@@ -55,12 +56,15 @@ class SoupFlow:
         res["msg"] = msg
         msg += f"\n依据：{judge_res.output.reasoning}"
         self.console.print(Text(msg, style="bold blue"))
+        self.ai_running = False 
         return res
 
     def handle_answer(self, user_input):
         res = {
             "msg": "",
         }
+
+        self.ai_running = True
 
         if not self.game_state["running"]:
             res["msg"] = "Game is not running."
@@ -83,6 +87,7 @@ class SoupFlow:
                     style="bold blue",
                 )
             )
+        self.ai_running = False
         return res
 
     def run(self, user_input):

@@ -12,12 +12,23 @@
 
 <header> 
     <center> 
-        <h1>海龟汤</h1>  
-        <h2 id="thinking">🤔...</h2>
+        <h1>海龟汤 <span id="thinking">🤔...</span> </h1>  
     </center>  
 </header>
 
 <main class="container">
+    <div class="grid" id="soup_info" style="text-align: center;">
+        <div>
+            <h3>当前汤</h3>
+            <p id="current_soup"></p>
+        </div>
+
+        <div>
+            <h3>你的名字:</h3>
+            <input type="text" id="player_name_input" value="匿名玩家" />
+        </div>
+    </div>
+
     <div id="chatbox" class="overflow-auto">
         <table>
         <tbody id="chat_tab"> 
@@ -27,8 +38,8 @@
     </div>
 
     <div class="grid" id="panel">
-        <div>
-            <button id="btn_new_game">开始新汤</button>
+        <div  style="text-align: center;">
+            <button id="btn_new_game" style="margin-right: 1.5em;">开始新汤</button>
             <button id="btn_end_game">结束此汤</button>
         </div>
 
@@ -36,19 +47,10 @@
             <textarea name="saying" id="input_box"></textarea>
         </div>
 
-        <div>
-            <fieldset>
-                <label>
-                    输入类型:
-                </label>
-                <label>
-                    <input type="radio" id="input_ask" name="input_type" value="Ask" checked /> 
-                    提问
-                </label>
-                <label>
-                    <input type="radio" id="input_answer" name="input_type" value="Answer" /> 
-                    回答
-                </label>
+        <div style="text-align: center;">
+            <fieldset style="text-align: center;">
+                <input type="radio" id="input_ask" name="input_type" value="Ask" checked /> 提问
+                <input type="radio" id="input_answer" name="input_type" value="Answer" /> 回答
             </fieldset>
             <button id="input_btn">发送（Enter）</button>
         </div>

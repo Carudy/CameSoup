@@ -1,6 +1,7 @@
 var server_url = "https://app.imgop.dedyn.io/game/soup";
 
 var sending_cmd = false;
+var current_soup = null;
 
 
 send_cmd = function(data, callback) {
@@ -36,6 +37,7 @@ document.getElementById('btn_new_game').addEventListener('click', function() {
 
     send_cmd(data, function(response) {
         console.log('Response from server:', response);
+        current_soup = response.soup_question;
         insert_chat_row('主持人', '新游戏已开始！问题是：' + response.soup_question);
     });
 });
@@ -54,6 +56,7 @@ document.getElementById('btn_end_game').addEventListener('click', function() {
     send_cmd(data, function(response) {
         console.log('Response from server:', response);
         insert_chat_row('主持人', 'Game END.');
+        current_soup = null;
     });
 });
 
@@ -110,7 +113,12 @@ document.getElementById('input_btn').addEventListener('click', function() {
     let inputType = document.getElementById('input_ask').checked ? 'ask' : 'answer';
     console.log(`Input Type: ${inputType}, User Input: ${userInput}`);
 
-    insert_chat_row('你', userInput);
+    let user_id = document.getElementById('player_name_input').value;
+    if (user_id.trim() === '') {
+        user_id = '匿名玩家';
+    }
+    console.log(`User ID: ${user_id}`);
+    insert_chat_row(user_id, userInput);
     
     const data = {
         'cmd': inputType,
@@ -123,12 +131,15 @@ document.getElementById('input_btn').addEventListener('click', function() {
     });
 });
 
+var thinking_emoji = document.getElementById('thinking');
+var soup_text = document.getElementById('current_soup');
 
 setInterval(function() {
-    const element = document.getElementById('thinking');
-    if (element) {
-        element.textContent = sending_cmd ? '🤔...' : '😊';
+    if (thinking_emoji) {
+        thinking_emoji.textContent = sending_cmd ? '🤔...' : '😊';
     }
+    soup_text.textContent = current_soup ? current_soup : '当前无进行中的游戏';
+
 }, 200);
 
 

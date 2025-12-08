@@ -32,6 +32,9 @@ def handle_input():
 
     logger.info(f"Received: {req}")
 
+    if app.soup_flow.ai_running:
+        return {"msg": "AI is processing. Please wait."}
+
     if "cmd" not in req:
         return {"msg": "no cmd"}
 
