@@ -24,11 +24,11 @@ logging.getLogger('werkzeug').addFilter(IgnoreHeartbeatFilter())
 app = SoupWebApp(__name__)
 app.wsgi_app = ProxyFix(
     app.wsgi_app,
-    x_for=1,           # Trust X-Forwarded-For
-    x_proto=1,         # Trust X-Forwarded-Proto
-    x_host=1,          # Trust X-Forwarded-Host
-    x_port=1,          # Trust X-Forwarded-Port
-    x_prefix=1         # THIS IS KEY — Trust X-Forwarded-Prefix
+    x_for=1,          
+    x_proto=1,         
+    x_host=1,          
+    x_port=1,          
+    x_prefix=1         
 )
 
 @app.route("/")
@@ -47,13 +47,16 @@ def handle_update():
         res = {
             "code": 0,
             "msg": "Info renewed.",
+            "ai_running": app.soup_flow.ai_running,
             "game_id": app.soup_flow.game_state["game_id"],
             "current_soup": app.soup_flow.game_state["current_soup"]['question'] if app.soup_flow.game_state["current_soup"] else None,
         }
         if req['game_id'] != app.soup_flow.game_state["game_id"]:
             res["new_chats"] = app.soup_flow.chat_history
         else:
-            res["new_chats"] = app.soup_flow.chat_history[req['chat_id']:]
+            res["new_chats"] = app.soup_flow.chat_history[req['chat_id']:] if req['chat_id'] < len(app.soup_flow.chat_history) else []
+        if res["new_chats"]:
+            logger.info(f"New chats: {len(res['new_chats'])} since chat_id {req['chat_id']}")
         return res
 
 
@@ -61,12 +64,12 @@ def handle_update():
 def handle_input():
     req = request.json
     if "cmd" not in req:
-        return {"msg": "no cmd"}
+        return {"code": 1, "msg": "no cmd"}
 
     logger.info(f"Received: {req}")
     # other cmds
     if app.soup_flow.ai_running:
-        return {"msg": "AI is processing. Please wait."}
+        return {"code": 1, "msg": "AI is processing. Please wait."}
 
     if req["cmd"].strip().lower() == "new_game":
         app.soup_flow.start_new_game()
@@ -83,7 +86,10 @@ def handle_input():
         app.soup_flow.end_game()
         return {"code": 0, "msg": "Game ended."}
 
-    elif req["cmd"].strip().startswith("ask"):
+    if len(req["content"]) < 5:
+        return {"code": 1, "msg": "Game ended."}
+
+    if req["cmd"].strip().startswith("ask"):
         res = app.soup_flow.handle_ask(req)
         return res
 
