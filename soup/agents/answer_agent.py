@@ -8,16 +8,27 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from soup.agents.dep import SoupState
 from soup.config import CHERRYIN_KEY
 
-JUDGE_PROMPT = """
-你是海龟汤游戏的判断者，根据用户的回答，判断其是否大体正确。
-"""
+ANSWER_JUDGE_SYSTEM_PROMPT = """
+你现在是「海龟汤」游戏的【答案裁判】（Answer Judge）。
+你的唯一职责是：判断玩家提交的完整答案是否已经**大体正确**（即已触及汤底的核心真相），即使表述不够完美或细节有小出入，只要核心逻辑正确就判为「正确」。
+
+严格遵守以下规则：
+1. 只有当玩家的答案与汤底的**核心真相完全一致或高度等价**时，才回答「正确」。
+2. 如果玩家只是接近、缺少关键点、理解方向错误、多余假设干扰真相，一律判为「错误」。
+3. 绝对不要因为「很接近」就心软，必须严格！
+4. 输出必须极简，只返回「正确」或「错误」，绝不解释、不鼓励、不提示。
+5. 你看不到玩家的提问历史，只根据本次提交的答案 + 汤底进行独立判断。
+""".strip()
 
 
-class JudgeRes(BaseModel):
-    """对用户的回应。"""
-
-    result: Literal["正确", "错误"] = Field(description="根据汤面汤底对用户回答的判断")
-    reasoning: str = Field(description="简要说明判断依据")
+class AnswerJudgeOutput(BaseModel):
+    """答案裁判的结构化输出"""
+    result: Literal["正确", "错误"] = Field(
+        description="玩家本次提交的答案是否大体正确"
+    )
+    reasoning: str = Field(
+        description="简要的判断依据"
+    )
 
 
 model = OpenAIChatModel(
@@ -29,23 +40,39 @@ model = OpenAIChatModel(
     ),
 )
 
-answer_agent = Agent(
+answer_agent = Agent[
+    SoupState,
+    AnswerJudgeOutput
+](
     model=model,
-    deps_type=SoupState,
-    system_prompt=JUDGE_PROMPT,
-    output_type=JudgeRes,
+    system_prompt=ANSWER_JUDGE_SYSTEM_PROMPT,
+    output_type=AnswerJudgeOutput,
+    retries=3,           
 )
 
-
 @answer_agent.instructions
-def answer_instructions(ctx) -> str:
-    """为answer_agent生成指令。"""
-    current_soup = ctx.deps.current_soup
-    soup_question = current_soup["question"]
-    soup_answer = current_soup["answer"]
+def build_answer_judge_instructions(ctx: SoupState) -> str:
+    """
+    动态注入当前海龟汤的汤面和汤底（仅裁判可见）
+    """
+    soup = ctx.deps.current_soup
+    if not soup:
+        raise ValueError("当前没有加载海龟汤题目（current_soup 为空）")
+
+    question = soup.get("question", "").strip()
+    answer = soup.get("answer", "").strip()
+
+    if not question or not answer:
+        raise ValueError("current_soup 缺少 question 或 answer 字段")
 
     return f"""
-当前的
-汤面：{soup_question}
-汤底：{soup_answer} 
-"""
+【当前海龟汤题目 - 仅你可见】
+
+汤面（玩家看到的故事）：
+{question}
+
+汤底（标准正确答案）：
+{answer}
+
+请严格根据上面的汤底，判断玩家本次提交的答案是否已抓住核心真相。
+""".strip()

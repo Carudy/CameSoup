@@ -1,171 +1,185 @@
-var server_url = "https://app.imgop.dedyn.io/game/soup";
+// Configuration
+const CONFIG = {
+    SERVER_URL: 'https://app.imgop.dedyn.io/game/soup',
+    POLL_INTERVAL: 100,
+    UI_UPDATE_INTERVAL: 100
+};
 
-var game_id = -1;
-var sending_cmd = false;
-var current_soup = null;
-var thinking_emoji = document.getElementById('thinking');
-var soup_text = document.getElementById('current_soup');
-var chat_from = 0;
-var chat_tab = document.getElementById('chat_tab');
+// Application state
+const state = {
+    gameId: -1,
+    chatFrom: 0,
+    currentSoup: null,
+    isSending: false
+};
 
+// DOM elements cache
+const elements = {
+    thinking: document.getElementById('thinking'),
+    soupText: document.getElementById('current_soup'),
+    chatTab: document.getElementById('chat_tab'),
+    chatbox: document.getElementById('chatbox'),
+    inputBox: document.getElementById('input_box'),
+    inputBtn: document.getElementById('input_btn'),
+    playerName: document.getElementById('player_name_input'),
+    inputAsk: document.getElementById('input_ask'),
+    btnNewGame: document.getElementById('btn_new_game'),
+    btnEndGame: document.getElementById('btn_end_game')
+};
 
-send_cmd = function(target, data, callback) {
-    fetch(server_url + target, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.code != 0) {
-            insert_chat_row('系统', `错误：${data.msg}`);
+// API communication
+async function sendCommand(endpoint, data) {
+    try {
+        const response = await fetch(`${CONFIG.SERVER_URL}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.code !== 0) {
+            addChatMessage('系统', `错误：${result.msg}`);
         }
-        callback(data);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    })
-    .finally(() => {
+        
+        return result;
+    } catch (error) {
+        console.error('Network error:', error);
+        // addChatMessage('系统', '网络错误，请检查连接');
+        return null;
+    }
+}
+
+// Chat management
+function addChatMessage(speaker, content) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td class="sayer">${speaker}</td>
+        <td class="cont">${content}</td>
+    `;
+    elements.chatTab.appendChild(row);
+    elements.chatbox.scrollTop = elements.chatbox.scrollHeight;
+}
+
+function clearChat() {
+    elements.chatTab.innerHTML = '';
+    state.chatFrom = 0;
+}
+
+// Game commands
+async function executeCommand(cmd, additionalData = {}) {
+    if (state.isSending) {
+        console.log('Command in progress, please wait');
+        return;
+    }
+
+    const data = { cmd, ...additionalData };
+    const response = await sendCommand('/cmd', data);
+    
+    if (response) {
+        if (cmd === 'new_game') {
+            state.currentSoup = response.soup_question;
+        } else if (cmd === 'end_game') {
+            state.currentSoup = null;
+        }
+    }
+}
+
+async function handleUserInput() {
+    if (state.isSending) {
+        console.log('Please wait for AI response');
+        return;
+    }
+
+    const userInput = elements.inputBox.value.trim();
+    if (!userInput) return;
+
+    elements.inputBox.value = '';
+
+    const inputType = elements.inputAsk.checked ? 'ask' : 'answer';
+    const speaker = elements.playerName.value.trim() || '匿名玩家';
+
+    await executeCommand(inputType, {
+        content: userInput,
+        speaker: speaker
     });
 }
 
-
-document.getElementById('btn_new_game').addEventListener('click', function() {
-    if (sending_cmd) {
-        console.log('A command is already being sent, please wait.');
-        return;
-    }
+// Game state polling
+async function pollGameState() {
     const data = {
-        'cmd': 'new_game'
+        cmd: 'get_info',
+        game_id: state.gameId,
+        chat_id: state.chatFrom
     };
 
-    send_cmd('/cmd', data, function(response) {
-        console.log('Response from server:', response);
-        current_soup = response.soup_question;
-    });
-});
-
-document.getElementById('btn_end_game').addEventListener('click', function() {
-    if (sending_cmd) {
-        console.log('A command is already being sent, please wait.');
+    const response = await sendCommand('/update', data);
+    if (!response) {
+        setTimeout(pollGameState, CONFIG.POLL_INTERVAL);
         return;
     }
-    const data = {
-        'cmd': 'end_game'
-    };
 
-    send_cmd('/cmd', data, function(response) {
-        console.log('Response from server:', response);
-        current_soup = null;
-    });
-});
+    // Check if game changed
+    if (state.gameId !== response.game_id) {
+        clearChat();
+        addChatMessage('系统', '已更新至新游戏');
+    }
 
-let insert_chat_row = function(sayer, content) {
-    let newRow = document.createElement('tr');
+    // Update state
+    state.gameId = response.game_id;
+    state.isSending = response.ai_running;
+    state.currentSoup = response.current_soup || null;
 
-    let sayerCell = document.createElement('td');
-    sayerCell.className = 'sayer';
-    sayerCell.textContent = sayer;
-    newRow.appendChild(sayerCell);
+    // Add new chat messages
+    if (response.new_chats?.length > 0) {
+        response.new_chats.forEach(chat => {
+            addChatMessage(chat.sayer, chat.content);
+        });
+        state.chatFrom += response.new_chats.length;
+    }
 
-    let contentCell = document.createElement('td');
-    contentCell.className = 'cont';
-    contentCell.textContent = content;
-    newRow.appendChild(contentCell);
-
-    chat_tab.appendChild(newRow);
-
-    let chatbox = document.getElementById('chatbox');
-    chatbox.scrollTop = chatbox.scrollHeight;
+    setTimeout(pollGameState, CONFIG.POLL_INTERVAL);
 }
 
-
-document.getElementById('input_btn').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('input_btn').click();
+// UI updates
+function updateUI() {
+    if (elements.thinking) {
+        elements.thinking.textContent = state.isSending ? '🤔' : '😊';
     }
-});
-document.getElementById('input_box').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('input_btn').click();
-    }
-});
-
-
-document.getElementById('input_btn').addEventListener('click', function() {
-    if (sending_cmd) {
-        console.log('A command is already being sent, please wait.');
-        return;
-    }
-    let input_box = document.getElementById('input_box');
-    const userInput = input_box.value.trim();
-    if (userInput === '') {
-        console.log('Empty input, ignoring.');
-        return;
-    }
-    input_box.value = '';
-
-    let inputType = document.getElementById('input_ask').checked ? 'ask' : 'answer';
-    console.log(`Input Type: ${inputType}, User Input: ${userInput}`);
-
-    let user_id = document.getElementById('player_name_input').value;
-    if (user_id.trim() === '') {
-        user_id = '匿名玩家';
-    }
-    console.log(`User ID: ${user_id}`);
-    const data = {
-        'cmd': inputType,
-        'content': userInput,
-        'speaker': user_id,
-    };
-
-    send_cmd('/cmd', data, function(response) {
-        console.log('Response from server:', response);
-    });
-});
-
-
-
-get_game_state = function() {
-    const data = {
-        'cmd': 'get_info',
-        'game_id': game_id,
-        'chat_id': chat_from,
-    };
-    send_cmd('/update', data, function(res) {
-        if (game_id != res.game_id) {
-            chat_from = 0;
-            chat_tab.innerHTML = '';
-            insert_chat_row('系统', '已更新至新游戏。');
-        }
-
-        game_id = res.game_id;
-        sending_cmd = res.ai_running;
-        current_soup = res.current_soup || null;
-        if (res.new_chats.length > 0) {
-            console.log(`New chats received: ${res.new_chats}`);
-            res.new_chats.forEach(function(chat) {
-                insert_chat_row(chat.sayer, chat.content);
-            });
-            chat_from += res.new_chats.length;
-        }
-        setTimeout(get_game_state, 200)
-    })
+    
+    elements.soupText.textContent = state.currentSoup || '当前无进行中的游戏';
 }
 
+// Event listeners
+function setupEventListeners() {
+    // New game button
+    elements.btnNewGame.addEventListener('click', () => {
+        executeCommand('new_game');
+    });
 
-setInterval(function() {
-    if (thinking_emoji) {
-        thinking_emoji.textContent = sending_cmd ? '🤔' : '😊';
-    }
-    soup_text.textContent = current_soup ? current_soup : '当前无进行中的游戏';
-}, 200);
+    // End game button
+    elements.btnEndGame.addEventListener('click', () => {
+        executeCommand('end_game');
+    });
 
+    // Send button
+    elements.inputBtn.addEventListener('click', handleUserInput);
 
-document.addEventListener('DOMContentLoaded', function() {
-    get_game_state();
-});
+    // Enter key in input box
+    elements.inputBox.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleUserInput();
+        }
+    });
+}
+
+// Initialize application
+function init() {
+    setupEventListeners();
+    pollGameState();
+    setInterval(updateUI, CONFIG.UI_UPDATE_INTERVAL);
+}
+
+// Start when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

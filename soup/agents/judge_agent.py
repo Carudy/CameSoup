@@ -8,51 +8,70 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from soup.agents.dep import SoupState
 from soup.config import CHERRYIN_KEY
 
-JUDGE_PROMPT = """
-你是海龟汤游戏的判断者，根据用户输入分类回答：
-- 一般疑问句（能用是/否回答）：根据汤面汤底回答"是"或"否"或"不相关"
-    - 若用户的问题与汤底信息高度相关且答案为肯定，则回答"是" 
-    - 若用户的问题与汤底信息高度相关且答案为否定，则回答"否"
-    - 若感觉无法用是否回答，则回答"不相关"
-注意不主动透露答案信息
-"""
+JUDGE_SYSTEM_PROMPT = """
+你现在是「海龟汤」游戏的严格判断者。
+你的任务是根据汤面（用户看到的故事）和汤底（隐藏的真相），对玩家的提问进行精准分类回答。
+
+规则如下：
+1. 如果问题是典型的「是否」疑问句（可以用 是 / 否 明确回答），请严格按照汤底的事实回答：
+   - 完全正确且与汤底高度相关的肯定回答 → 回答「是」
+   - 完全错误或与汤底矛盾的否定回答 → 回答「否」
+   - 与汤底无关或无法用「是/否」明确判断 → 回答「不相关」
+2. 绝不能主动泄露任何汤底信息，只能回答「是」「否」「不相关」三者之一。
+3. 回答必须极其简洁，不能添加任何额外解释、暗示或情感词。
+""".strip()
 
 
-class JudgeRes(BaseModel):
-    """对用户的回应。"""
-
+class JudgeOutput(BaseModel):
+    """Judge 代理的结构化输出"""
     result: Literal["是", "否", "不相关"] = Field(
-        description="根据汤面汤底对用户问题的判断"
+        description="对玩家提问的最终判定结果"
     )
-    reasoning: str = Field(description="简要说明判断依据")
-
+    reasoning: str = Field(
+        description="【内部记录】判断此结果的简要逻辑依据，仅用于调试和日志，不会在回复中显示"
+    )
 
 model = OpenAIChatModel(
-    # "agent/deepseek-v3.2-exp(free)",
-    "agent/deepseek-v3.1-terminus(free)",
-    # "agent/glm-4.6(free)",
+    "agent/deepseek-v3.1-terminus(free)", 
     provider=OpenAIProvider(
-        api_key=CHERRYIN_KEY, base_url="https://open.cherryin.ai/v1/"
-    ),
+        api_key=CHERRYIN_KEY,
+        base_url="https://open.cherryin.ai/v1/",
+    )
 )
 
-judge_agent = Agent(
+judge_agent = Agent[
+    SoupState,           
+    JudgeOutput          
+](
     model=model,
-    deps_type=SoupState,
-    system_prompt=JUDGE_PROMPT,
-    output_type=JudgeRes,
+    system_prompt=JUDGE_SYSTEM_PROMPT,
+    output_type=JudgeOutput,
+    retries=2,           
 )
 
+# ==================== Dynamic Instructions ====================
 
 @judge_agent.instructions
-def judge_instructions(ctx) -> str:
-    """为judge_agent生成指令。"""
-    current_soup = ctx.deps.current_soup
-    soup_question = current_soup["question"]
-    soup_answer = current_soup["answer"]
+def build_judge_instructions(ctx: SoupState) -> str:
+    """
+    动态注入当前海龟汤的汤面和汤底（仅 Judge 能看到）。
+    """
+    soup = ctx.deps.current_soup
+    if not soup:
+        raise ValueError("当前没有加载海龟汤题目（current_soup 为空）")
+
+    question = soup.get("question", "").strip()
+    answer = soup.get("answer", "").strip()
+
+    if not question or not answer:
+        raise ValueError("current_soup 缺少 question 或 answer 字段")
 
     return f"""
-当前的
-汤面：{soup_question}
-汤底：{soup_answer} 
-"""
+当前海龟汤题目（仅你可见）：
+
+汤面（玩家看到的故事）：
+{question}
+
+汤底（隐藏的真相）：
+{answer}
+    """.strip()

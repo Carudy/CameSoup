@@ -17,40 +17,44 @@
 </header>
 
 <main class="container">
-    <div class="grid" id="soup_info" style="text-align: center;">
+    <div id="soup_info">
         <div>
             <h3>当前汤</h3>
-            <p id="current_soup"></p>
+            <p id="current_soup">等待开始...</p>
         </div>
-
         <div>
-            <h3>你的名字:</h3>
-            <input style="text-align: center;" type="text" id="player_name_input" value="匿名玩家" />
+            <h3>你的名字</h3>
+            <input type="text" id="player_name_input" value="匿名玩家" />
         </div>
     </div>
-
-    <div id="chatbox" class="overflow-auto">
+    <div id="chatbox">
         <table>
-        <tbody id="chat_tab"> 
-            
-        </tbody>
+            <tbody id="chat_tab"> 
+                <tr>
+                    <td class="sayer">系统</td>
+                    <td class="cont">欢迎来到海龟汤游戏！点击"开始新汤"开始游戏。</td>
+                </tr>
+            </tbody>
         </table>
     </div>
-
-    <div class="grid" id="panel">
-        <div  style="text-align: center;">
-            <button id="btn_new_game" style="margin-right: 1.5em;">开始新汤</button>
+    <div id="panel">
+        <div>
+            <button id="btn_new_game">开始新汤</button>
             <button id="btn_end_game">结束此汤</button>
         </div>
-
         <div>
-            <textarea name="saying" id="input_box"></textarea>
+            <textarea id="input_box" placeholder="在此输入您的问题或答案...(最少5个字)"></textarea>
         </div>
-
-        <div style="text-align: center;">
-            <fieldset style="text-align: center;">
-                <input type="radio" id="input_ask" name="input_type" value="Ask" checked /> 提问
-                <input type="radio" id="input_answer" name="input_type" value="Answer" /> 回答
+        <div>
+            <fieldset>
+                <label style="width: 5%;">
+                    <input style="width: 100%;" type="radio" id="input_ask" name="input_type" value="Ask" checked />
+                    提问
+                </label>
+                <label style="width: 5%;">
+                    <input style="width: 100%;" type="radio" id="input_answer" name="input_type" value="Answer" />
+                    回答
+                </label>
             </fieldset>
             <button id="input_btn">发送（Enter）</button>
         </div>
