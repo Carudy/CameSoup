@@ -6,19 +6,23 @@ from typing import Dict, Union
 from rich.console import Console
 from rich.text import Text
 
-from soup.agents import answer_agent, judge_agent
+from soup.agents import create_judge_agent, create_answer_agent
 from soup.agents.dep import SoupState
-from soup.config import BASE_DIR, logger
-from soup.comm.msg import GameMsg
+from soup.config import config, logger
 
 
 class SoupFlow:
     """Main game flow controller for Lateral Thinking Puzzles (海龟汤)"""
     
     def __init__(self):
+        self.reload()
+
+    def reload(self):
+        """Reload configuration and puzzles"""
+        config.reload()
         # AI agents
-        self.judge_agent = judge_agent
-        self.answer_agent = answer_agent
+        self.judge_agent = create_judge_agent()
+        self.answer_agent = create_answer_agent()
         
         # Game state
         self.ai_running = False
@@ -34,10 +38,11 @@ class SoupFlow:
         
         # Console for CLI output
         self.console = Console()
+        logger.info("Configuration and soups reloaded")
     
     def _load_soups(self) -> list:
         """Load soup puzzles from JSON file"""
-        soup_path = os.path.join(BASE_DIR, "soups.json")
+        soup_path = os.path.join(config.BASE_DIR, "soups.json")
         try:
             with open(soup_path, "r", encoding="utf-8") as f:
                 return json.load(f)
@@ -99,14 +104,14 @@ class SoupFlow:
         
         return content, speaker
     
-    def _create_response(self, msg: str, speaker: str = '主持人') -> GameMsg:
+    def _create_response(self, msg: str, speaker: str = '主持人'):
         """Create a standardized response message"""
-        response = GameMsg()
+        response = {'code': 0}
         response["msg"] = msg
         response["speaker"] = speaker
         return response
     
-    def handle_ask(self, user_input: Union[str, Dict]) -> GameMsg:
+    def handle_ask(self, user_input: Union[str, Dict]):
         """Handle a yes/no question from player"""
         content, speaker = self._extract_input(user_input)
         
@@ -148,7 +153,7 @@ class SoupFlow:
         finally:
             self.ai_running = False
     
-    def handle_answer(self, user_input: Union[str, Dict]) -> GameMsg:
+    def handle_answer(self, user_input: Union[str, Dict]):
         """Handle a solution attempt from player"""
         content, speaker = self._extract_input(user_input)
         

@@ -29,17 +29,18 @@ The current puzzle is injected to them as dynamic prompts/instructions, therefor
 
 For webUI:
 ```
-uv run python -m soup.web.app
+uv run python main.py
 
 // supports multi-player at the same time
-```
-For terminal CLI:
-```
-uv run python main.py
 ```
 
 Then visit 
 > https://your_ip:42345
+
+For terminal CLI:
+```
+uv run python main.py --cli
+```
 
 Port can be set in web/app.py
 

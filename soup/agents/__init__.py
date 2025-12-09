@@ -1,8 +1,7 @@
-from .answer_agent import answer_agent
-from .judge_agent import judge_agent
+from .answer_agent import create_answer_agent
+from .judge_agent import create_judge_agent
 
 __all__ = [
-    "judge_agent",
-    "answer_agent",
-    "SoupState",
+    "create_answer_agent",
+    "create_judge_agent",
 ]

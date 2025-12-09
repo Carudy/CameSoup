@@ -93,6 +93,21 @@ def index():
     """Serve main page"""
     return render_template("index.html")
 
+@app.route("/reload")
+def handel_reload():
+    """Reload configuration"""
+    is_valid, error = validate_request(['cmd'])
+    if not is_valid:
+        return create_response(1, error)
+    
+    req = request.json
+    cmd = req['cmd'].strip().lower()
+
+    if cmd != "reload":
+        return create_response(1, "Invalid command")
+    app.soup_flow.reload()
+    return create_response(msg="Configuration reloaded")
+
 
 @app.route("/update", methods=["POST"])
 def handle_update():

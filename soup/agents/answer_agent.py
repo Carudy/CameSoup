@@ -6,7 +6,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from soup.agents.dep import SoupState
-from soup.config import CHERRYIN_KEY
+from soup.config import config, logger
 
 ANSWER_JUDGE_SYSTEM_PROMPT = """
 你现在是「海龟汤」游戏的【答案裁判】（Answer Judge）。
@@ -31,48 +31,51 @@ class AnswerJudgeOutput(BaseModel):
     )
 
 
-model = OpenAIChatModel(
-    # "agent/deepseek-v3.2-exp(free)",
-    "agent/deepseek-v3.1-terminus(free)",
-    # "agent/glm-4.6(free)",
-    provider=OpenAIProvider(
-        api_key=CHERRYIN_KEY, base_url="https://open.cherryin.ai/v1/"
-    ),
-)
+def create_answer_agent():
+    model = OpenAIChatModel(
+        config.ANS_MODEL,
+        provider=OpenAIProvider(
+            api_key=config.CHERRYIN_KEY, base_url="https://open.cherryin.ai/v1/"
+        ),
+    )
 
-answer_agent = Agent[
-    SoupState,
-    AnswerJudgeOutput
-](
-    model=model,
-    system_prompt=ANSWER_JUDGE_SYSTEM_PROMPT,
-    output_type=AnswerJudgeOutput,
-    retries=3,           
-)
+    answer_agent = Agent[
+        SoupState,
+        AnswerJudgeOutput
+    ](
+        model=model,
+        system_prompt=ANSWER_JUDGE_SYSTEM_PROMPT,
+        output_type=AnswerJudgeOutput,
+        retries=3,           
+    )
 
-@answer_agent.instructions
-def build_answer_judge_instructions(ctx: SoupState) -> str:
-    """
-    动态注入当前海龟汤的汤面和汤底（仅裁判可见）
-    """
-    soup = ctx.deps.current_soup
-    if not soup:
-        raise ValueError("当前没有加载海龟汤题目（current_soup 为空）")
+    @answer_agent.instructions
+    def build_answer_judge_instructions(ctx: SoupState) -> str:
+        """
+        动态注入当前海龟汤的汤面和汤底（仅裁判可见）
+        """
+        soup = ctx.deps.current_soup
+        if not soup:
+            raise ValueError("当前没有加载海龟汤题目（current_soup 为空）")
 
-    question = soup.get("question", "").strip()
-    answer = soup.get("answer", "").strip()
+        question = soup.get("question", "").strip()
+        answer = soup.get("answer", "").strip()
 
-    if not question or not answer:
-        raise ValueError("current_soup 缺少 question 或 answer 字段")
+        if not question or not answer:
+            raise ValueError("current_soup 缺少 question 或 answer 字段")
 
-    return f"""
-【当前海龟汤题目 - 仅你可见】
+        return f"""
+    【当前海龟汤题目 - 仅你可见】
 
-汤面（玩家看到的故事）：
-{question}
+    汤面（玩家看到的故事）：
+    {question}
 
-汤底（标准正确答案）：
-{answer}
+    汤底（标准正确答案）：
+    {answer}
 
-请严格根据上面的汤底，判断玩家本次提交的答案是否已抓住核心真相。
-""".strip()
+    请严格根据上面的汤底，判断玩家本次提交的答案是否已抓住核心真相。
+    """.strip()
+
+    logger.info(f"Answer Judge Agent created successfully. (model={config.ANS_MODEL})")
+    
+    return answer_agent

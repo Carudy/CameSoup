@@ -13,9 +13,10 @@ RUN printf '%s\n' \
 
 COPY pyproject.toml uv.lock .python-version .env ./
 COPY soup/ ./soup/
+COPY main.py ./
 
 # Install exact dependencies (very fast because of layer caching)
 RUN uv sync --frozen --no-cache
 
 EXPOSE 42345
-ENTRYPOINT ["uv", "run", "python", "-m", "soup.web.app"]
+ENTRYPOINT ["uv", "run", "python", "main.py"]
