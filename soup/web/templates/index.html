@@ -19,11 +19,11 @@
 <main class="container">
     <div id="soup_info">
         <div>
-            <h3>当前汤</h3>
+            <h4>当前汤</h4>
             <p id="current_soup">等待开始...</p>
         </div>
         <div>
-            <h3>你的名字</h3>
+            <h4>你的名字</h4>
             <input type="text" id="player_name_input" value="匿名玩家" />
         </div>
     </div>
@@ -38,20 +38,18 @@
         </table>
     </div>
     <div id="panel">
-        <div>
-            <button id="btn_new_game">开始新汤</button>
-            <button id="btn_end_game">结束此汤</button>
-        </div>
-        <div>
+        <div style="height: 63%;">
             <textarea id="input_box" placeholder="在此输入您的问题或答案...(最少5个字)"></textarea>
         </div>
-        <div>
+        <div style="height: 33%;">
+            <button id="btn_new_game">开始新汤</button>
+            <button id="btn_end_game">结束此汤</button>
             <fieldset>
-                <label style="width: 5%;">
+                <label style="width: 10%;">
                     <input style="width: 100%;" type="radio" id="input_ask" name="input_type" value="Ask" checked />
                     提问
                 </label>
-                <label style="width: 5%;">
+                <label style="width: 10%;">
                     <input style="width: 100%;" type="radio" id="input_answer" name="input_type" value="Answer" />
                     回答
                 </label>

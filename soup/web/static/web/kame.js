@@ -144,7 +144,7 @@ async function pollGameState() {
 // UI updates
 function updateUI() {
     if (elements.thinking) {
-        elements.thinking.textContent = state.isSending ? '🤔' : '😊';
+        elements.thinking.textContent = state.isSending ? '🤔' : '☺️';
     }
     
     elements.soupText.textContent = state.currentSoup || '当前无进行中的游戏';
@@ -154,12 +154,15 @@ function updateUI() {
 function setupEventListeners() {
     // New game button
     elements.btnNewGame.addEventListener('click', () => {
+        if (state.currentSoup) {
+            if (!confirm("当前有进行中的游戏，确定要开始新游戏吗？其他玩家可能还在猜哦。")) return;
+        }
         executeCommand('new_game');
     });
 
     // End game button
     elements.btnEndGame.addEventListener('click', () => {
-        executeCommand('end_game');
+        if (confirm("确定要结束当前游戏吗？其他玩家可能还在猜哦。")) executeCommand('end_game');
     });
 
     // Send button

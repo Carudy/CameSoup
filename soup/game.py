@@ -53,7 +53,10 @@ class SoupFlow:
         if not self.soups:
             logger.error("No soups available!")
             return {"question": "Error: No puzzles loaded", "answer": "N/A"}
-        return random.choice(self.soups)
+        new_soup = random.choice(self.soups)
+        while new_soup == self.game_state.get("current_soup"):
+            new_soup = random.choice(self.soups)
+        return new_soup
     
     def add_message(self, speaker: str, content: str) -> None:
         """Add a message to chat history"""
