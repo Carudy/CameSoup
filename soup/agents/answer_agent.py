@@ -21,7 +21,8 @@ class JudgeRes(BaseModel):
 
 
 model = OpenAIChatModel(
-    "agent/deepseek-v3.2-exp(free)",
+    # "agent/deepseek-v3.2-exp(free)",
+    "agent/deepseek-v3.1-terminus(free)",
     # "agent/glm-4.6(free)",
     provider=OpenAIProvider(
         api_key=CHERRYIN_KEY, base_url="https://open.cherryin.ai/v1/"
