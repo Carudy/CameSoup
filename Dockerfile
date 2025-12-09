@@ -1,18 +1,21 @@
-FROM alpine:latest
-RUN apk add --no-cache wget
+FROM ghcr.io/astral-sh/uv:debian
 
-# Set working directory
 WORKDIR /app
 
-# Install uv (the fast Python package installer)
-RUN wget -qO- https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
+# Tsinghua mirror (China) – remove if you don’t need it
+RUN mkdir -p /etc/uv
+RUN touch /etc/uv/uv.toml
+RUN printf '%s\n' \
+    '[[index]]' \
+    'url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"' \
+    'default = true' \
+    '' > /etc/uv/uv.toml
 
-# Copy project files
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock .python-version .env ./
 COPY soup/ ./soup/
-COPY .env ./
+
+# Install exact dependencies (very fast because of layer caching)
+RUN uv sync --frozen --no-cache
 
 EXPOSE 42345
-
-CMD ["uv", "run", "python", "-m", "soup.web.app"]
+ENTRYPOINT ["uv", "run", "python", "-m", "soup.web.app"]
